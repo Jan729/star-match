@@ -1,3 +1,7 @@
+Pick 1 or more digits that sum to the number of stars. 
+You can only use each digit once. Use up all of the digits within the time limit to win!
+
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
