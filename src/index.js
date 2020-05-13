@@ -4,12 +4,9 @@ import { useState } from 'react';
 import { useEffect } from 'react';
 import './index.css';
 
-//DO not name Number!! it's a reserved keyword
-//tip: name components with two words to avoid overriding top level javascript objects
-//click handler fxn closes over the scope of its owner and gets access to its props
-//rmb to refresh scope of closure when needed
-//see jscomplete.com/closures for more info
-
+//The comments contain some of my notes I took while learning React with the
+//React tutorials on PluralSight https://www.pluralsight.com/paths/react
+//I don't own this code
 
 //display all stars here
 //key for dynamic child
@@ -20,6 +17,12 @@ const StarsDisplay = props => (
      )}
     </>
 );
+
+//DO not name your components with Number!! it's a reserved keyword
+//tip: name components with two words to avoid overriding top level javascript objects
+//click handler fxn closes over the scope of its owner and gets access to its props
+//rmb to refresh scope of closure when needed
+//see jscomplete.com/closures for more info
 
 //a number button
 const PlayNumber = props => (
@@ -44,14 +47,16 @@ const PlayAgain = props => (
 
 );
 
-
-const Game = (props) => {
+//Custom Hook. contains state logic for game
+//stateful function -> by convention, prefix function name with 'use'
+//Rule of hooks: always use the react hooks function in the same order. Can't call them in loops/conditions
+const useGameState = () => {
     //Tip: for first draft, if you have UI elements that change, it's good to start by adding a state
     const [stars, setStars] = useState(utils.random(1, 9)); //state hook
     const [availableNums, setAvailableNums] = useState(utils.range(1, 9)); //Tip: use mock data to test UI
     const [candidateNums, setCandidateNums] = useState([]);
     const [secondsLeft, setSecondsLeft] = useState(10);
-    const buttons = 9;
+    
     //avoid for/while loops if you can. map/filter/reduce are more elegant and flexible
     //minimize stuff in states as much as possible. Calculate other values if needed
 
@@ -62,12 +67,52 @@ const Game = (props) => {
             const timerId = setTimeout(() => {  //call a new timer
                 setSecondsLeft(secondsLeft - 1); //sets state. will re-render. makes a loop
             }, 1000);
-            
+
             //"clean" side effect when it's no longer needed
             return () => clearTimeout(timerId); //delete timer
             //Bug in tutorial: timer 'stops' if you click on a number repeatedly
         }
     });
+
+    //set state whenever button is clicked
+    const setGameState = (newCandidateNums) => {
+        if (utils.sum(newCandidateNums) !== stars) { //wrong answer
+            setCandidateNums(newCandidateNums);
+        } else { //correct choice. reset available and candidate nums, redraw stars
+            const newAvailableNums = availableNums.filter(
+                n => !newCandidateNums.includes(n)
+            );
+
+            //only redraw a playable number of stars
+            setStars(utils.randomSumIn(newAvailableNums, 9));
+
+            setAvailableNums(newAvailableNums);
+            setCandidateNums([]);
+        }
+    }
+
+    //Game component needs stars, availableNums, candidateNums, secondsLeft, access to setGameState
+    return {
+        stars,
+        availableNums,
+        candidateNums,
+        secondsLeft,
+        setGameState,
+    };
+}
+
+
+const Game = (props) => {
+    //destructure elements needed from game state
+    const {
+        stars,
+        availableNums,
+        candidateNums,
+        secondsLeft,
+        setGameState,
+    } = useGameState();
+
+    const buttons = 9;
 
     //sum of selected numbers are greater than the number of stars
     const candidatesAreWrong = utils.sum(candidateNums) > stars;
@@ -95,20 +140,8 @@ const Game = (props) => {
                 candidateNums.concat(number)
                 : candidateNums.filter(cn => cn !== number);
 
-        if (utils.sum(newCandidateNums) !== stars) { //wrong answer
-            setCandidateNums(newCandidateNums);
-        } else { //correct choice. reset available and candidate nums, redraw stars
-            const newAvailableNums = availableNums.filter(
-                n => !newCandidateNums.includes(n)
-            );
-
-            //only redraw a playable number of stars
-            setStars(utils.randomSumIn(newAvailableNums, 9));
-
-            setAvailableNums(newAvailableNums);
-            setCandidateNums([]);
-        }
-    }
+        setGameState(newCandidateNums); //set state whenever button clicked
+    };
 
     //Readability Tip: don't do any computations within return statement
 
